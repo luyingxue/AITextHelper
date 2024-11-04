@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自媒体文本处理工具</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="logo">
+            <h1>TextPro</h1>
+        </div>
+        <div class="nav-menu">
+            <a href="#" class="active">首页</a>
+            <a href="#">工具</a>
+            <a href="#">历史记录</a>
+        </div>
+        <div class="user-actions">
+            <button class="btn-login">登录</button>
+            <button class="btn-register">注册</button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <ul class="tools-list">
+                <li class="active">文本纠错</li>
+                <li>社科类视频文案转公众号文章</li>
+                <li>摘要生成</li>
+                <li>SEO优化</li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            <div class="tool-container">
+                <div class="input-section">
+                    <h2>文本纠错工具</h2>
+                    <div class="text-controls">
+                        <span class="word-count">字数：0</span>
+                    </div>
+                    <textarea class="input-area" placeholder="请输入需要纠错的文本内容..."></textarea>
+                    <button class="btn-rewrite">开始纠错</button>
+                </div>
+                <div class="output-section">
+                    <h3>纠错结果 <span class="result-word-count">字数：0</span></h3>
+                    <div class="result-area"></div>
+                    <button class="btn-copy">复制全文</button>
+                </div>
+            </div>
+            <div class="tool-container video-to-article" style="display: none;">
+                <div class="input-section">
+                    <h2>社科类视频文案转公众号文章</h2>
+                    <div class="text-controls">
+                        <span class="word-count">字数：0</span>
+                    </div>
+                    <div class="input-options">
+                        <div class="option-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="sell-book-checkbox">
+                                是否卖书
+                            </label>
+                        </div>
+                        <div class="option-group">
+                            <label class="text-label">
+                                内容类别：
+                                <input type="text" class="content-category" placeholder="请输入内容类别（选填）">
+                            </label>
+                        </div>
+                        <div class="option-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="min-words-checkbox">
+                                最低字数要求
+                            </label>
+                        </div>
+                    </div>
+                    <textarea class="input-area" placeholder="请输入视频文案内容..."></textarea>
+                    <button class="btn-rewrite">开始转换</button>
+                </div>
+                <div class="output-section">
+                    <h3>转换结果 <span class="result-word-count">字数：0</span></h3>
+                    <div class="result-area"></div>
+                    <button class="btn-copy">复制全文</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2024 TextPro. 保留所有权利。</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html> 
