@@ -99,6 +99,32 @@ const callSummarizeAPI = async (originalText: string, saleBook: boolean) => {
   }
 };
 
+const callElderlyArticleAPI = async (originalText: string) => {
+  try {
+    const response = await fetch('http://192.168.0.100/v1/workflows/run', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer app-JPdwxEjXZujdUysMi1DtCWGm',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: { originalText: originalText },
+        response_mode: "streaming",
+        user: "abc-123"
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('API调用出错:', error);
+    throw error;
+  }
+};
+
 // Define category interface
 interface Category {
   id: string;
@@ -197,7 +223,16 @@ const categories: Category[] = [
     id: 'elderly-care',
     name: '养老',
     modules: [
-      // Add elderly care-related modules here
+      {
+        id: 'elderly-article',
+        name: '养生公众号伪原创',
+        inputFields: [
+          { type: 'textarea', label: '需要改写的文本', id: 'originalText' }
+        ],
+        processFunction: async (inputs): Promise<Response> => {
+          return await callElderlyArticleAPI(inputs.originalText);
+        }
+      }
     ]
   }
 ];
@@ -234,7 +269,11 @@ export function TextProcessingToolComponent() {
     }));
 
     try {
-      if (moduleId === 'correction' || moduleId === 'video-to-article' || moduleId === 'summarize') {
+      if (moduleId === 'correction' || 
+          moduleId === 'video-to-article' || 
+          moduleId === 'summarize' ||
+          moduleId === 'elderly-article'
+      ) {
         const response = await module.processFunction(inputs[moduleId] || {});
         if (response instanceof Response) {
           await handleStreamingResponse(response, moduleId);
@@ -439,7 +478,8 @@ export function TextProcessingToolComponent() {
                                   (module.id === 'keyword-extract' && (
                                     !inputs[module.id]?.keywordInput?.trim() ||
                                     !inputs[module.id]?.keywordCount
-                                  ))
+                                  )) ||
+                                  (module.id === 'elderly-article' && !inputs[module.id]?.originalText?.trim())
                                 }
                               >
                                 {isProcessing ? (
