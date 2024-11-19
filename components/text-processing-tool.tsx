@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -161,6 +161,46 @@ const callBabyShowAPI = async (text: string) => {
   }
 };
 
+// 添加新的 API 调用函数
+const callShortsDescAPI = async (keyword: string, description: string) => {
+  try {
+    const requestBody = {      
+      inputs: { 
+        keyword: keyword,
+        description: description
+      },
+      response_mode: "streaming",
+      user: "abc-123"
+    };
+
+    console.log('发送请求到 shorts-desc API');
+    console.log('请求体:', requestBody);
+
+    const response = await fetch('http://192.168.0.100/v1/completion-messages', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer app-tXzIgODmzrAhJQtkYOrSoSy4',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    if (!response.ok) {
+      console.error('API响应错误:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    console.log('API响应成功');
+    return response;
+  } catch (error) {
+    console.error('API调用出错:', error);
+    throw error;
+  }
+};
+
 // Define category interface
 interface Category {
   id: string;
@@ -282,10 +322,30 @@ const categories: Category[] = [
         processFunction: async (inputs): Promise<Response> => {
           return await callBabyShowAPI(inputs.text || '');
         }
+      },
+      {
+        id: 'shorts-desc',
+        name: 'YouTube Shorts标题和介绍',
+        inputFields: [
+          { type: 'input', label: '关键词', id: 'keyword' },
+          { type: 'textarea', label: '视频描述', id: 'description' }
+        ],
+        processFunction: async (inputs): Promise<Response> => {
+          return await callShortsDescAPI(
+            inputs.keyword || '',
+            inputs.description || ''
+          );
+        }
       }
     ]
   }
 ];
+
+// 定义历史记录项的接口
+interface HistoryItem {
+  input: string;
+  output: string;
+}
 
 export function TextProcessingToolComponent() {
   const [activeCategory, setActiveCategory] = useState(categories[0].id);
@@ -295,6 +355,37 @@ export function TextProcessingToolComponent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isApiFinished, setIsApiFinished] = useState(false);
   const [streamingOutput, setStreamingOutput] = useState<string>('');
+  const [babyShowHistory, setBabyShowHistory] = useState<HistoryItem[]>([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState<number>(-1);
+
+  const HISTORY_KEY = 'baby-show-history';
+
+  // 组件加载时从 localStorage 读取历史记录
+  useEffect(() => {
+    const loadHistory = () => {
+      try {
+        const savedHistory = localStorage.getItem(HISTORY_KEY);
+        if (savedHistory) {
+          const history = JSON.parse(savedHistory) as HistoryItem[];
+          setBabyShowHistory(history);
+        }
+      } catch (error) {
+        console.log('No history found, starting with empty history');
+        setBabyShowHistory([]);
+      }
+    };
+
+    loadHistory();
+  }, []);
+
+  // 保存历史记录到 localStorage
+  const saveHistory = (newHistory: HistoryItem[]) => {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+    } catch (error) {
+      console.error('Failed to save history:', error);
+    }
+  };
 
   const handleInputChange = (moduleId: string, fieldId: string, value: any) => {
     setInputs(prev => ({
@@ -323,8 +414,12 @@ export function TextProcessingToolComponent() {
           moduleId === 'video-to-article' || 
           moduleId === 'summarize' ||
           moduleId === 'elderly-article' ||
-          moduleId === 'baby-show'
+          moduleId === 'baby-show' ||
+          moduleId === 'shorts-desc'
       ) {
+        console.log('处理模块:', moduleId);
+        console.log('输入数据:', inputs[moduleId]);
+        
         const response = await module.processFunction(inputs[moduleId] || {});
         if (response instanceof Response) {
           await handleStreamingResponse(response, moduleId);
@@ -409,7 +504,20 @@ export function TextProcessingToolComponent() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          console.log('流读取完成');
+          // 流式传输完成后，如果是 baby show 模块，保存到历史记录
+          if (moduleId === 'baby-show') {
+            const newHistory = [
+              {
+                input: inputs[moduleId]?.text || '',
+                output: result
+              },
+              ...babyShowHistory.slice(0, 9)
+            ];
+            setBabyShowHistory(newHistory);
+            setCurrentHistoryIndex(0);
+            // 保存到 localStorage
+            saveHistory(newHistory);
+          }
           break;
         }
         
@@ -422,10 +530,11 @@ export function TextProcessingToolComponent() {
           if (line.startsWith('data: ')) {
             try {
               const jsonStr = line.slice(6);
+              console.log('收到数据:', jsonStr);  // 添加调试日志
               const data = JSON.parse(jsonStr);
               
-              // baby show 的响应格式
-              if (moduleId === 'baby-show') {
+              // 处理 baby show 和 shorts-desc 的响应
+              if (moduleId === 'baby-show' || moduleId === 'shorts-desc') {  // 添加 shorts-desc
                 if (data.event === 'message' && data.answer) {
                   result += data.answer;
                   setOutputs(prev => ({
@@ -433,9 +542,8 @@ export function TextProcessingToolComponent() {
                     [moduleId]: result
                   }));
                 }
-              } 
-              // 一般文字处理等其他模块的响应格式
-              else {
+              } else {
+                // 处理其他模块的响应
                 if (data.event === 'text_chunk' && data.data.text) {
                   result += data.data.text;
                   setOutputs(prev => ({
@@ -453,12 +561,11 @@ export function TextProcessingToolComponent() {
               }
             } catch (e) {
               console.error('JSON解析错误:', e);
+              console.error('错误的JSON字符串:', line);  // 添加错误数据日志
             }
           }
         }
       }
-    } catch (error) {
-      console.error('处理响应时出错:', error);
     } finally {
       reader.releaseLock();
     }
@@ -532,10 +639,7 @@ export function TextProcessingToolComponent() {
                                 </div>
                                 <Button 
                                   className="bg-teal-500 hover:bg-teal-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                  onClick={() => {
-                                    console.log('点击按钮，当前输入:', inputs[module.id]?.text);
-                                    handleProcess(category.id, module.id);
-                                  }}
+                                  onClick={() => handleProcess(category.id, module.id)}
                                   disabled={isProcessing || !inputs[module.id]?.text?.trim()}
                                 >
                                   {isProcessing ? (
@@ -558,6 +662,32 @@ export function TextProcessingToolComponent() {
                                     </ReactMarkdown>
                                   </div>
                                 </div>
+                                {babyShowHistory.length > 0 && (
+                                  <div>
+                                    <Label>历史记录</Label>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {babyShowHistory.map((_, index) => (
+                                        <Button
+                                          key={index}
+                                          variant={currentHistoryIndex === index ? "secondary" : "outline"}
+                                          className="w-10 h-10"
+                                          onClick={() => {
+                                            setCurrentHistoryIndex(index);
+                                            // 同时更新输入和输出
+                                            const historyItem = babyShowHistory[index];
+                                            handleInputChange(module.id, 'text', historyItem.input);
+                                            setOutputs(prev => ({
+                                              ...prev,
+                                              [module.id]: historyItem.output
+                                            }));
+                                          }}
+                                        >
+                                          {index + 1}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <div className="grid gap-6">
@@ -637,13 +767,13 @@ export function TextProcessingToolComponent() {
                             )}
                           </CardContent>
                           <CardFooter>
-                            {module.id !== 'baby-show' && module.id !== 'baby-show' && (
+                            {module.id !== 'baby-show' && module.id !== 'shorts-desc' && (
                               <Button 
                                 className="bg-teal-500 hover:bg-teal-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" 
                                 onClick={() => copyToClipboard(outputs[module.id] || '')}
                                 disabled={!outputs[module.id]?.trim() || !isApiFinished}
                               >
-                                复制全文
+                                复制全
                               </Button>
                             )}
                           </CardFooter>
