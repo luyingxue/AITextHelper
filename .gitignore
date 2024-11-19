@@ -19,3 +19,6 @@ yarn-error.log
 # 操作系统
 .DS_Store
 Thumbs.db 
+
+# 忽略历史记录文件
+baby-show-history.json 
