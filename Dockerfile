@@ -1,23 +1,34 @@
-# 使用 Node.js 官方镜像作为基础镜像
-FROM node:18-alpine
+FROM node:18-alpine AS base
 
-# 设置工作目录
+# Install dependencies only when needed
+FROM base AS deps
 WORKDIR /app
 
-# 复制 package.json 和 package-lock.json
-COPY package*.json ./
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# 安装依赖
-RUN npm install
-
-# 复制所有源代码
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 构建应用
+# Build application
 RUN npm run build
 
-# 暴露端口
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy built application
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
 EXPOSE 3000
 
-# 启动应用
 CMD ["npm", "start"] 

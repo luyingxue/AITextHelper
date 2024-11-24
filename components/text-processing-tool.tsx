@@ -14,27 +14,41 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github.css'  // 或者其他主题样式
+import { API_CONFIG } from '@/config/api';
 
 // API call functions (unchanged)
 const callWorkflowAPI = async (text: string) => {
   try {
-    const response = await fetch('http://192.168.0.100/v1/workflows/run', {
+    const requestBody = {
+      inputs: { text: text },
+      response_mode: "streaming",
+      user: "abc-123"
+    };
+
+    console.log('文本纠错 API 调用:');
+    console.log('URL:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WORKFLOW}`);
+    console.log('Token:', API_CONFIG.TOKENS.CORRECTION);
+    console.log('请求体:', requestBody);
+
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WORKFLOW}`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer app-YlMtJSBsux9fVSO2CyRp4wL1',
+        'Authorization': `Bearer ${API_CONFIG.TOKENS.CORRECTION}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        inputs: { text: text },
-        response_mode: "streaming",
-        user: "abc-123"
-      })
+      body: JSON.stringify(requestBody)
     });
     
+    console.log('API响应状态:', response.status);
     if (!response.ok) {
+      console.error('API错误响应:', {
+        status: response.status,
+        statusText: response.statusText
+      });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
+    console.log('API调用成功');
     return response;
   } catch (error) {
     console.error('API调用出错:', error);
@@ -44,28 +58,41 @@ const callWorkflowAPI = async (text: string) => {
 
 const callVideoToArticleAPI = async (originalText: string, saleBook: boolean, contentType: string, wordLimit: boolean) => {
   try {
-    const response = await fetch('http://192.168.0.100/v1/workflows/run', {
+    const requestBody = {
+      inputs: { 
+        originalText: originalText,
+        saleBook: saleBook ? 'y' : 'n',
+        contentType: contentType,
+        wordLimit: wordLimit ? 'y' : 'n'
+      },
+      response_mode: "streaming",
+      user: "abc-123"
+    };
+
+    console.log('视频转文章 API 调��:');
+    console.log('URL:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WORKFLOW}`);
+    console.log('Token:', API_CONFIG.TOKENS.VIDEO_TO_ARTICLE);
+    console.log('请求体:', requestBody);
+
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WORKFLOW}`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer app-h9eX3Fln4UeIWfBnvODLCrBj',
+        'Authorization': `Bearer ${API_CONFIG.TOKENS.VIDEO_TO_ARTICLE}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        inputs: { 
-          originalText: originalText,
-          saleBook: saleBook ? 'y' : 'n',
-          contentType: contentType,
-          wordLimit: wordLimit ? 'y' : 'n'
-        },
-        response_mode: "streaming",
-        user: "abc-123"
-      })
+      body: JSON.stringify(requestBody)
     });
     
+    console.log('API响应状态:', response.status);
     if (!response.ok) {
+      console.error('API错误响应:', {
+        status: response.status,
+        statusText: response.statusText
+      });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
+    console.log('API调用成功');
     return response;
   } catch (error) {
     console.error('API调用出错:', error);
@@ -75,10 +102,10 @@ const callVideoToArticleAPI = async (originalText: string, saleBook: boolean, co
 
 const callSummarizeAPI = async (originalText: string, saleBook: boolean) => {
   try {
-    const response = await fetch('http://192.168.0.100/v1/workflows/run', {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WORKFLOW}`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer app-Lvw1h8H3n5IC7CpZK6f8aidh',
+        'Authorization': `Bearer ${API_CONFIG.TOKENS.SUMMARIZE}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -104,10 +131,10 @@ const callSummarizeAPI = async (originalText: string, saleBook: boolean) => {
 
 const callElderlyArticleAPI = async (originalText: string) => {
   try {
-    const response = await fetch('http://192.168.0.100/v1/workflows/run', {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WORKFLOW}`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer app-JPdwxEjXZujdUysMi1DtCWGm',
+        'Authorization': `Bearer ${API_CONFIG.TOKENS.ELDERLY_ARTICLE}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -137,10 +164,10 @@ const callBabyShowAPI = async (text: string) => {
       user: "abc-123"
     });
 
-    const response = await fetch('http://192.168.0.100/v1/completion-messages', {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.COMPLETION}`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer app-AJpl5UT5pMI6wpunu9vHsfMo',
+        'Authorization': `Bearer ${API_CONFIG.TOKENS.BABY_SHOW}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -164,11 +191,8 @@ const callBabyShowAPI = async (text: string) => {
 // 添加新的 API 调用函数
 const callShortsDescAPI = async (keyword: string, description: string) => {
   try {
-    const requestBody = {      
-      inputs: { 
-        keyword: keyword,
-        description: description
-      },
+    const requestBody = {
+      inputs: { query: `关键词：${keyword}\n视频描述：${description}` },
       response_mode: "streaming",
       user: "abc-123"
     };
@@ -176,10 +200,10 @@ const callShortsDescAPI = async (keyword: string, description: string) => {
     console.log('发送请求到 shorts-desc API');
     console.log('请求体:', requestBody);
 
-    const response = await fetch('http://192.168.0.100/v1/completion-messages', {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.COMPLETION}`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer app-tXzIgODmzrAhJQtkYOrSoSy4',
+        'Authorization': `Bearer ${API_CONFIG.TOKENS.SHORTS_DESC}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody)
@@ -238,7 +262,7 @@ const categories: Category[] = [
       },
       {
         id: 'keyword-extract',
-        name: '关键词提取',
+        name: '关键词提���',
         inputFields: [
           { type: 'textarea', label: '需要提取关键词的文本', id: 'keywordInput' },
           { type: 'input', label: '关键词数量', id: 'keywordCount' }
@@ -347,6 +371,13 @@ interface HistoryItem {
   output: string;
 }
 
+// 添加错误类型定义
+interface ApiError extends Error {
+  name: string;
+  message: string;
+  stack?: string;
+}
+
 export function TextProcessingToolComponent() {
   const [activeCategory, setActiveCategory] = useState(categories[0].id);
   const [activeModule, setActiveModule] = useState(categories[0].modules[0].id);
@@ -398,44 +429,60 @@ export function TextProcessingToolComponent() {
   };
 
   const handleProcess = async (categoryId: string, moduleId: string) => {
+    // 在函数开始时立即打印
+    console.log('=== 开始处理请求 ===');
+    console.log('模块ID:', moduleId);
+    console.log('类别ID:', categoryId);
+    console.log('输入数据:', JSON.stringify(inputs[moduleId], null, 2));
+
     const category = categories.find(c => c.id === categoryId);
     const module = category?.modules.find(m => m.id === moduleId);
-    if (!module) return;
-
-    setIsProcessing(true);
-    setIsApiFinished(false);
-    setOutputs(prev => ({
-      ...prev,
-      [moduleId]: ''
-    }));
+    
+    if (!module) {
+      const error = `未找到对应模块: ${categoryId}/${moduleId}`;
+      console.error(error);
+      toast.error(error);
+      return;
+    }
 
     try {
-      if (moduleId === 'correction' || 
-          moduleId === 'video-to-article' || 
-          moduleId === 'summarize' ||
-          moduleId === 'elderly-article' ||
-          moduleId === 'baby-show' ||
-          moduleId === 'shorts-desc'
-      ) {
-        console.log('处理模块:', moduleId);
-        console.log('输入数据:', inputs[moduleId]);
-        
-        const response = await module.processFunction(inputs[moduleId] || {});
-        if (response instanceof Response) {
-          await handleStreamingResponse(response, moduleId);
-        } else {
-          setOutputs(prev => ({
-            ...prev,
-            [moduleId]: response
-          }));
-        }
+      setIsProcessing(true);
+      setIsApiFinished(false);
+      setOutputs(prev => ({
+        ...prev,
+        [moduleId]: ''
+      }));
+
+      console.log(`开始调用 ${module.name} 的处理函数`);
+      const response = await module.processFunction(inputs[moduleId] || {});
+      console.log('API响应:', response instanceof Response ? 'Stream' : typeof response);
+
+      if (response instanceof Response) {
+        console.log('开始处理流式响应');
+        await handleStreamingResponse(response, moduleId);
+        console.log('流式响应处理完成');
+      } else {
+        console.log('处理普通响应');
+        setOutputs(prev => ({
+          ...prev,
+          [moduleId]: response
+        }));
       }
+
+      console.log('处理成功完成');
       setIsApiFinished(true);
-    } catch (error) {
-      console.error('处理失败:', error);
+
+    } catch (err) {
+      const error = err as ApiError;
+      console.error('处理失败:', {
+        name: error.name || 'Unknown Error',
+        message: error.message || 'No error message',
+        stack: error.stack || 'No stack trace'
+      });
       toast.error("处理失败，请重试");
     } finally {
       setIsProcessing(false);
+      console.log('=== 处理结束 ===');
     }
   };
 
@@ -478,7 +525,7 @@ export function TextProcessingToolComponent() {
         } catch (err) {
           console.error('复制失败:', err);
           textArea.remove();
-          throw new Error('复制失败');
+          throw new Error('复���失败');
         }
       }
     } catch (err) {
@@ -497,6 +544,7 @@ export function TextProcessingToolComponent() {
     response: Response, 
     moduleId: string
   ): Promise<string> => {
+    console.log(`开始处理 ${moduleId} 的流式响应`);
     const reader = response.body!.getReader();
     let result = '';
     
@@ -504,70 +552,63 @@ export function TextProcessingToolComponent() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          // 流式传输完成后，如果是 baby show 模块，保存到历史记录
-          if (moduleId === 'baby-show') {
-            const newHistory = [
-              {
-                input: inputs[moduleId]?.text || '',
-                output: result
-              },
-              ...babyShowHistory.slice(0, 9)
-            ];
-            setBabyShowHistory(newHistory);
-            setCurrentHistoryIndex(0);
-            // 保存到 localStorage
-            saveHistory(newHistory);
-          }
+          console.log('流读取完成');
           break;
         }
         
         const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
+        console.log('收到数据块:', chunk);
         
-        for (const line of lines) {
-          if (line.trim() === '') continue;
-          
-          if (line.startsWith('data: ')) {
-            try {
-              const jsonStr = line.slice(6);
-              console.log('收到数据:', jsonStr);  // 添加调试日志
-              const data = JSON.parse(jsonStr);
-              
-              // 处理 baby show 和 shorts-desc 的响应
-              if (moduleId === 'baby-show' || moduleId === 'shorts-desc') {  // 添加 shorts-desc
-                if (data.event === 'message' && data.answer) {
-                  result += data.answer;
-                  setOutputs(prev => ({
-                    ...prev,
-                    [moduleId]: result
-                  }));
-                }
-              } else {
-                // 处理其他模块的响应
-                if (data.event === 'text_chunk' && data.data.text) {
-                  result += data.data.text;
-                  setOutputs(prev => ({
-                    ...prev,
-                    [moduleId]: result
-                  }));
-                }
-                else if (data.event === 'workflow_finished' && data.data.outputs?.text) {
-                  result = data.data.outputs.text;
-                  setOutputs(prev => ({
-                    ...prev,
-                    [moduleId]: result
-                  }));
-                }
+        if (chunk.trim() === '') continue;
+        
+        if (chunk.startsWith('data: ')) {
+          try {
+            const jsonStr = chunk.slice(6);
+            console.log('收到数据:', jsonStr);  // 添加调试日志
+            const data = JSON.parse(jsonStr);
+            
+            // 处理 baby show 和 shorts-desc 的响应
+            if (moduleId === 'baby-show' || moduleId === 'shorts-desc') {  // 添��� shorts-desc
+              if (data.event === 'message' && data.answer) {
+                result += data.answer;
+                setOutputs(prev => ({
+                  ...prev,
+                  [moduleId]: result
+                }));
               }
-            } catch (e) {
-              console.error('JSON解析错误:', e);
-              console.error('错误的JSON字符串:', line);  // 添加错误数据日志
+            } else {
+              // 处理其他模块的响应
+              if (data.event === 'text_chunk' && data.data.text) {
+                result += data.data.text;
+                setOutputs(prev => ({
+                  ...prev,
+                  [moduleId]: result
+                }));
+              }
+              else if (data.event === 'workflow_finished' && data.data.outputs?.text) {
+                result = data.data.outputs.text;
+                setOutputs(prev => ({
+                  ...prev,
+                  [moduleId]: result
+                }));
+              }
             }
+          } catch (e) {
+            console.error('JSON解析错误:', e);
+            console.error('错误的JSON字符串:', chunk);  // 添加错误数据日志
           }
         }
       }
+    } catch (err) {
+      const error = err as ApiError;
+      console.error('流处理错误:', {
+        name: error.name || 'Unknown Error',
+        message: error.message || 'No error message'
+      });
+      throw error;
     } finally {
       reader.releaseLock();
+      console.log('流处理结束');
     }
     
     return result;
@@ -650,7 +691,7 @@ export function TextProcessingToolComponent() {
                                   ) : '开始生成提示词'}
                                 </Button>
                                 <div>
-                                  <Label htmlFor="baby-show-output">输出文本</Label>
+                                  <Label htmlFor="baby-show-output">输出文</Label>
                                   <div 
                                     className="relative min-h-[200px] max-h-[400px] overflow-y-auto rounded-md border border-input bg-white px-3 py-2 text-sm"
                                   >
@@ -673,7 +714,7 @@ export function TextProcessingToolComponent() {
                                           className="w-10 h-10"
                                           onClick={() => {
                                             setCurrentHistoryIndex(index);
-                                            // 同时更新输入和输出
+                                            // 同时更新入和输出
                                             const historyItem = babyShowHistory[index];
                                             handleInputChange(module.id, 'text', historyItem.input);
                                             setOutputs(prev => ({
@@ -734,15 +775,19 @@ export function TextProcessingToolComponent() {
                                     isProcessing || 
                                     (module.id === 'correction' && !inputs[module.id]?.correctionInput?.trim()) ||
                                     (module.id === 'video-to-article' && (
-                                      !inputs[module.id]?.videoInput?.trim() ||
-                                      !inputs[module.id]?.contentCategory?.trim()
+                                      !inputs[module.id]?.videoInput?.trim()
                                     )) ||
                                     (module.id === 'summarize' && !inputs[module.id]?.summarizeInput?.trim()) ||
                                     (module.id === 'keyword-extract' && (
                                       !inputs[module.id]?.keywordInput?.trim() ||
                                       !inputs[module.id]?.keywordCount
                                     )) ||
-                                    (module.id === 'elderly-article' && !inputs[module.id]?.originalText?.trim())
+                                    (module.id === 'elderly-article' && !inputs[module.id]?.originalText?.trim()) ||
+                                    (module.id === 'baby-show' && !inputs[module.id]?.text?.trim()) ||
+                                    (module.id === 'shorts-desc' && (
+                                      !inputs[module.id]?.keyword?.trim() ||
+                                      !inputs[module.id]?.description?.trim()
+                                    ))
                                   }
                                 >
                                   {isProcessing ? (
